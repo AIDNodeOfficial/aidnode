@@ -1,2 +1,65 @@
-# aidnode
-AIDNode is an AI-to-AI support network providing automated repair, verification, and validation services for autonomous AI agents through APIs and MCP.
+# AIDNode
+
+**The Support Network for Autonomous Agents**
+
+AIDNode is an experimental, free-beta **Model Context Protocol (MCP)** service hosted on Cloudflare. It provides utilities to help AI agents diagnose API errors, compare supplied content, and check structured records.
+
+AIDNode is **not a conversational AI agent**. All results are based on the submitted inputs; no external sources are independently checked by Verify, and Witness cannot certify that a real-world action occurred.
+
+## Live service
+
+- **Website:** https://botstop-dev.botstop-dev-lab-2026.workers.dev/about
+- **MCP endpoint (Streamable HTTP):** https://botstop-dev.botstop-dev-lab-2026.workers.dev/mcp
+- **Health:** https://botstop-dev.botstop-dev-lab-2026.workers.dev/health
+- **OpenAPI:** https://botstop-dev.botstop-dev-lab-2026.workers.dev/openapi.json
+- **Agent onboarding:** https://botstop-dev.botstop-dev-lab-2026.workers.dev/llms.txt
+- **Free beta terms/capacity:** https://botstop-dev.botstop-dev-lab-2026.workers.dev/beta
+- **Discovery metadata:** https://botstop-dev.botstop-dev-lab-2026.workers.dev/discovery.json
+
+The legacy `botstop-dev` hostname is preserved for compatibility. The public-facing service is branded **AIDNode**.
+
+## Available tools
+
+| Tool | What it actually does |
+| --- | --- |
+| `repair` | Suggests bounded recovery steps for common HTTP/API errors; does **not** execute repairs. |
+| `verify` | Compares caller-supplied text/fingerprints; does **not** independently visit sources or attest freshness. |
+| `witness` | Checks submitted JSON/records against explicit structural requirements; does **not** prove real-world completion. |
+| `submit_beta_feedback` | Accepts optional, nonbinding agent feedback at usage checkpoints. |
+
+## Free development beta
+
+- Up to **100 operator accounts**, with **500 successful operations per account**.
+- **No payment, charges, or retroactive billing** during the beta.
+- Any suggested future price is research only, not a commitment to pay.
+- Operator authorization is required to enroll an agent.
+- Never send credentials, personal data, secrets, or confidential third-party content.
+
+### Authorized enrollment
+
+With operator permission, POST JSON to `/beta/join`:
+
+```json
+{
+  "operator_id": "your-unique-operator-id",
+  "agent_name": "Your Agent Name",
+  "agree_beta_terms": true
+}
+```
+
+Store the returned beta API key privately. For protected `tools/call` operations, send `Authorization: Bearer <API key>`. **Never commit API keys, Cloudflare secrets, or personal credentials to GitHub.**
+
+MCP `initialize` and `tools/list` are public; calls to the tools require a beta key.
+
+## Official MCP Registry
+
+- Intended registry name: **`io.github.AIDNodeOfficial/aidnode`**
+- Listing metadata: [server.json](server.json)
+- Instructions: [HOW_TO_START.md](HOW_TO_START.md)
+- Manual publishing workflow: [Validate and Publish AIDNode MCP](.github/workflows/publish-mcp.yml)
+
+The workflow is **manual only**, not triggered by normal commits. It must confirm the public health endpoint and an MCP initialize handshake, validate `server.json`, authenticate with GitHub OIDC, and only then attempt publication.
+
+**Repository existence does not mean Registry publication succeeded.** Check the Actions job logs and the public Registry record before announcing a live listing.
+
+This repository contains **public metadata and instructions**, not the Cloudflare application source, secrets, or customer data.
