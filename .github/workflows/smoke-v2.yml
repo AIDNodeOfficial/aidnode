@@ -18,7 +18,7 @@ jobs:
           set -euo pipefail
           curl --fail --silent --show-error --retry 2 --max-time 20 \
             'https://botstop-dev.botstop-dev-lab-2026.workers.dev/health' \
-            | jq -e '.ok == true and .engine_version == "2.1.0" and .live_payments == false and .billing_mode == "disabled" and (.tools|length)==5' >/dev/null
+            | jq -e '.ok == true and (.engine_version | split(".") | map(tonumber)) >= [2,3,0] and .live_payments == false and .billing_mode == "disabled" and (.tools|length)==5' >/dev/null
 
       - name: Verify public MCP discovery lists all five engines
         run: |

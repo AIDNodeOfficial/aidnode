@@ -4,7 +4,7 @@
 # Usage: npx wrangler dev -c wrangler.local.toml --local
 #        npx wrangler d1 execute aidnode-local-db -c wrangler.local.toml --local --file migrations/0000_schema.sql
 name = "aidnode-local"
-main = "src/worker.js"
+main = "dev/local-entry.mjs"
 compatibility_date = "2026-11-14"
 
 [vars]
