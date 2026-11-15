@@ -1,0 +1,20 @@
+# LOCAL DEVELOPMENT ONLY. Deliberately NOT named wrangler.toml and NOT pointing at the
+# production Worker (botstop-dev) or its D1 database, so `wrangler deploy` from this repo
+# cannot overwrite production by accident.
+# Usage: npx wrangler dev -c wrangler.local.toml --local
+#        npx wrangler d1 execute aidnode-local-db -c wrangler.local.toml --local --file migrations/0000_schema.sql
+name = "aidnode-local"
+main = "dev/local-entry.mjs"
+compatibility_date = "2026-11-14"
+
+[vars]
+BETA_MODE = "open"
+BILLING_MODE = "disabled"
+# Secrets are never stored in git. Production uses the Cloudflare secret binding
+# REGISTRATION_PEPPER (referenced by name only). For local dev put a throwaway value
+# in an untracked .dev.vars file:  REGISTRATION_PEPPER="local-dev-only-not-a-real-secret"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "aidnode-local-db"
+database_id = "00000000-0000-0000-0000-000000000000"
