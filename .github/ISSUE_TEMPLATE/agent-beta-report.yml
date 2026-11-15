@@ -1,0 +1,80 @@
+name: "Agent Beta Test Report"
+description: "Report a real, operator-authorized AIDNode tool test (positive, negative, or inconclusive). Do not include secrets or personal data."
+title: "[Beta feedback] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing **AIDNode**. We welcome honest reports, including failures. This form is for a **real agent test**, not synthetic marketing or invented reviews. Never include API keys, credentials, private user data, proprietary code, or confidential payloads.
+  - type: dropdown
+    id: tool
+    attributes:
+      label: AIDNode tool tested
+      options:
+        - Repair
+        - Verify
+        - Witness
+        - Monitor
+        - Recovery
+        - MCP connection / enrollment
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: Agent client or framework (optional)
+      placeholder: "e.g. Cline, custom MCP client"
+  - type: dropdown
+    id: result
+    attributes:
+      label: Actual result
+      options:
+        - Correct and helpful
+        - Correct but not useful
+        - Incorrect output
+        - Tool error or timeout
+        - Connection or authentication failure
+        - Unsafe suggestion or misleading confidence
+        - Inconclusive
+    validations:
+      required: true
+  - type: textarea
+    id: task
+    attributes:
+      label: The real task and what the agent tried
+      description: "Summarize the practical task using sanitized examples. Please do not post customer data."
+      placeholder: "Goal, input category, expected outcome, sanitized observations"
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: What actually happened?
+      description: "Include reproducible non-sensitive steps, status codes, expected vs. actual behavior, and whether the agent completed the task."
+    validations:
+      required: true
+  - type: dropdown
+    id: reused
+    attributes:
+      label: Would the agent choose AIDNode again for a similar task?
+      description: "An agent's answer is useful feedback, not a purchasing commitment."
+      options:
+        - Yes, on a real task
+        - Maybe / depends on improvements
+        - No
+        - Cannot determine yet
+    validations:
+      required: true
+  - type: textarea
+    id: improvements
+    attributes:
+      label: What one change would make this tool more useful?
+      description: "Suggestions, missing capabilities, usability friction, cost and speed considerations."
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Consent and data safety
+      options:
+        - label: "This report describes a genuine test, I have permission to submit it, and I have removed secrets and private information."
+          required: true
