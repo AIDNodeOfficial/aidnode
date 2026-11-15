@@ -2,13 +2,13 @@
 
 **The Support Network for Autonomous Agents**
 
-AIDNode is an experimental, free-beta **Model Context Protocol (MCP)** service hosted on Cloudflare. It provides utilities to help AI agents diagnose API errors, compare supplied content, and check structured records.
+AIDNode is an experimental, free-beta **Model Context Protocol (MCP)** service hosted on Cloudflare. It provides five structured agent utilities for diagnostics, comparison, constrained public-source evidence checks, validation receipts, endpoint probes, and safe workflow recovery planning.
 
-AIDNode is **not a conversational AI agent**. All results are based on the submitted inputs; no external sources are independently checked by Verify, and Witness cannot certify that a real-world action occurred.
+AIDNode is **not a conversational AI agent**. Repair and Recovery are advisory, Verify and Monitor can independently fetch only approved public HTTPS origins, and Witness signs checks of evidence but **cannot certify real-world task completion**. These are auditable deterministic engines, not newly trained AI models.
 
 ## Calling AI-agent operators and developers: free beta testers wanted
 
-**Have an MCP-compatible AI agent?** AIDNode is looking for independently operated agents to try Repair, Verify, and Witness on practical, non-sensitive tasks. The beta is free (up to 100 operator accounts, 500 successful calls each), with no payments or retroactive charges.
+**Have an MCP-compatible AI agent?** AIDNode is looking for independently operated agents to try Repair, Verify, Witness, Monitor, and Recovery on practical, non-sensitive tasks. The beta is free (up to 100 operator accounts, 500 successful calls each), with no payments or retroactive charges.
 
 **[Join the public beta-testing invitation and share feedback](https://github.com/AIDNodeOfficial/aidnode/issues/1)**. Operator permission is required before enrollment. AIDNode values honest results, including failures and limitations, not artificial bot traffic.
 
@@ -34,12 +34,12 @@ The legacy `botstop-dev` hostname is preserved for compatibility. The public-fac
 
 | Tool | What it actually does |
 | --- | --- |
-| `repair` | Suggests bounded recovery steps for common HTTP/API errors; does **not** execute repairs. |
-| `verify` | Compares caller-supplied text/fingerprints; does **not** independently visit sources or attest freshness. |
-| `witness` | Checks submitted JSON/records against explicit structural requirements; does **not** prove real-world completion. |
-| `submit_beta_feedback` | Accepts optional, nonbinding agent feedback at usage checkpoints. |
+| `repair` | Classifies API/transport failures and creates idempotency-aware, bounded retry plans. Advisory only. |
+| `verify` | Compares text or canonical JSON and can independently fetch small artifacts from a fixed list of approved public HTTPS origins. No factual-truth certification. |
+| `witness` | Checks structured evidence, optionally compares an independently fetched public artifact, and issues an HMAC-signed receipt. Not proof of real-world completion. |
+| `monitor` | Performs on-demand, restricted HTTPS status/content health probes. Recurring schedules are not yet available. |\n| `recovery` | Builds safe dependency-aware workflow resume and compensation plans; never executes recovery actions. |\n| `submit_beta_feedback` | Accepts optional, nonbinding agent feedback at usage checkpoints (currently Repair, Verify, Witness and overall). |
 
-## Free development beta
+**[Read the complete five-engine guide](docs/engines-v2.md)**, including exact MCP call examples, limitations, and receipt verification.\n\n## Free development beta
 
 - Up to **100 operator accounts**, with **500 successful operations per account**.
 - **No payment, charges, or retroactive billing** during the beta.
