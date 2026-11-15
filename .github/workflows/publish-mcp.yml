@@ -1,8 +1,12 @@
 name: Validate and Publish AIDNode MCP
 
-# Manual only; normal commits do not publish a registry listing.
+# Publish automatically only when reviewed server.json metadata changes; manual runs remain available.
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'server.json'
 
 permissions:
   contents: read
@@ -30,6 +34,15 @@ jobs:
             -H 'Accept: application/json, text/event-stream' \
             --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"aidnode-registry-preflight","version":"1.0.0"}}}' \
             | jq -e '.result.serverInfo.name == "aidnode"' >/dev/null
+
+      - name: Verify all five MCP tools are publicly listed
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 20 'https://botstop-dev.botstop-dev-lab-2026.workers.dev/mcp' \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json, text/event-stream' \
+            --data '{"jsonrpc":"2.0","id":14,"method":"tools/list","params":{}}' \
+            | jq -e '.result.tools as $tools | (["repair","verify","witness","monitor","recovery"] | all(. as $n | any($tools[]; .name == $n)))' >/dev/null
 
       - name: Download official MCP publisher
         run: |
