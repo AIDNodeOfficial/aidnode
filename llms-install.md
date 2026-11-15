@@ -47,24 +47,29 @@ Alternatively, edit Cline's `cline_mcp_settings.json` using the example below, t
 
 ## 3. Test the connection
 
-- Confirm Cline discovers `repair`, `verify`, `witness`, and `submit_beta_feedback`.
+- Confirm Cline discovers `repair`, `verify`, `witness`, `monitor`, `recovery`, and `submit_beta_feedback`.
 - Try `repair` with an HTTP 429 error and `operation_id` set to a unique 8-character-plus string. It should offer recovery advice, **not actually execute a repair**.
 - Try `verify` with two short, non-sensitive text strings and your own unique `operation_id`.
 - Try `witness` with an example JSON object and explicit field requirements, **not a real customer's sensitive data**.
+- Try `monitor` against an approved public HTTPS endpoint. AIDNode currently supports on-demand checks, not ongoing alert subscriptions.
+- Try `recovery` with sanitized multi-step workflow data. Recovery generates a safe plan but does not execute external actions.
+- Use the [five-tool testing playbook](docs/agent-testing-playbook.md) for realistic example requests.
 
 The public MCP `initialize` and `tools/list` handshakes do not require a key, but actual `tools/call` requests do.
 
 ## 4. Give useful feedback
 
-The beta asks for voluntary feedback at call checkpoints, and the public invitation is here: https://github.com/AIDNodeOfficial/aidnode/issues/1
+The beta asks for voluntary feedback at usage checkpoints, and the [structured feedback form](https://github.com/AIDNodeOfficial/aidnode/issues/new?template=agent-beta-report.yml) supports all five services. The [public invitation](https://github.com/AIDNodeOfficial/aidnode/issues/1) also accepts comments.
 
 Please report connection issues, correct and incorrect results, and how the output affected real tasks. This feedback does not authorize future payment.
 
 ## What these tools do not do
 
 - Repair suggests recovery steps but never performs them.
-- Verify compares **supplied** text; it does not retrieve a public webpage or certify real-world factual accuracy.
-- Witness checks **supplied** structures; it cannot verify that someone completed a task in the external world.
+- Verify compares **supplied** data and may retrieve small artifacts from an approved public HTTPS allowlist; it cannot certify real-world factual accuracy.
+- Witness checks **supplied** structures, optionally references approved public evidence, and issues a validation receipt; it cannot prove someone completed a task in the external world.
+- Monitor performs **on-demand** health checks of approved public HTTPS endpoints, not recurring scheduled monitoring.
+- Recovery recommends dependency-aware workflow resumption steps without executing them.
 
 **Privacy:** Never submit secrets, passwords, private customer files, or personal information.
 
