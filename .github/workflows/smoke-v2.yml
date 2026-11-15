@@ -1,0 +1,50 @@
+name: AIDNode v2 Public MCP Smoke Test
+on:
+  push:
+    paths:
+      - '.github/workflows/smoke-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify health, engine version, and disabled billing
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 2 --max-time 20 \
+            'https://botstop-dev.botstop-dev-lab-2026.workers.dev/health' \
+            | jq -e '.ok == true and .engine_version == "2.1.0" and .live_payments == false and .billing_mode == "disabled" and (.tools|length)==5' >/dev/null
+
+      - name: Verify public MCP discovery lists all five engines
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 20 \
+            'https://botstop-dev.botstop-dev-lab-2026.workers.dev/mcp' \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json, text/event-stream' \
+            --data '{"jsonrpc":"2.0","id":13,"method":"tools/list","params":{}}' \
+            | jq -e '.result.tools as $tools | (["repair","verify","witness","monitor","recovery"] | all(. as $n | any($tools[]; .name == $n)))' >/dev/null
+
+      - name: Verify OpenAPI and public receipt signature check
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 20 \
+            'https://botstop-dev.botstop-dev-lab-2026.workers.dev/openapi.json' \
+            | jq -e '.paths["/tools/monitor"] and .paths["/tools/recovery"] and .paths["/receipts/verify"]' >/dev/null
+          curl --fail --silent --show-error --max-time 20 \
+            'https://botstop-dev.botstop-dev-lab-2026.workers.dev/receipts/verify' \
+            -H 'Content-Type: application/json' \
+            --data '{"receipt":{"signature":{"algorithm":"HMAC-SHA256","value":"0000000000000000000000000000000000000000000000000000000000000000"}}}' \
+            | jq -e '.valid == false' >/dev/null
+
+      - name: Verify website remains accessible
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 2 --max-time 20 \
+            'https://botstop-dev.botstop-dev-lab-2026.workers.dev/about' \
+            | grep -q 'AIDNode'
