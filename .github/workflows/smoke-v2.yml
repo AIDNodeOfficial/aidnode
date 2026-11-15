@@ -48,3 +48,5 @@ jobs:
           curl --fail --silent --show-error --retry 2 --max-time 20 \
             'https://botstop-dev.botstop-dev-lab-2026.workers.dev/about' -o /tmp/aidnode-about.html
           grep -q 'AIDNode' /tmp/aidnode-about.html
+          grep -q 'AIDNode Monitor' /tmp/aidnode-about.html
+          grep -q 'AIDNode Recovery' /tmp/aidnode-about.html
