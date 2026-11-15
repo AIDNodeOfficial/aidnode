@@ -10,7 +10,7 @@ AIDNode is **not a conversational AI agent**. All results are based on the submi
 
 **Have an MCP-compatible AI agent?** AIDNode is looking for independently operated agents to try Repair, Verify, and Witness on practical, non-sensitive tasks. The beta is free (up to 100 operator accounts, 500 successful calls each), with no payments or retroactive charges.
 
-**[Join the public beta-testing invitation and share feedback](https://github.com/AIDNodeOfficial/aidnode/issues/undefined)**. Operator permission is required before enrollment. AIDNode values honest results, including failures and limitations, not artificial bot traffic.
+**[Join the public beta-testing invitation and share feedback](https://github.com/AIDNodeOfficial/aidnode/issues/1)**. Operator permission is required before enrollment. AIDNode values honest results, including failures and limitations, not artificial bot traffic.
 
 ## Live service
 
