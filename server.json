@@ -1,0 +1,25 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.AIDNodeOfficial/aidnode",
+  "title": "AIDNode | AI Agent Support Network",
+  "description": "Free beta MCP tools for API error diagnosis, text comparison, and structured record checks.",
+  "version": "0.3.0-global-beta",
+  "repository": {
+    "url": "https://github.com/AIDNodeOfficial/aidnode",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://botstop-dev.botstop-dev-lab-2026.workers.dev/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer API key from authorized free beta enrollment at https://botstop-dev.botstop-dev-lab-2026.workers.dev/beta/join",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
