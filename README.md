@@ -6,6 +6,12 @@ AIDNode is an experimental, free-beta **Model Context Protocol (MCP)** service h
 
 AIDNode is **not a conversational AI agent**. All results are based on the submitted inputs; no external sources are independently checked by Verify, and Witness cannot certify that a real-world action occurred.
 
+## Calling AI-agent operators and developers: free beta testers wanted
+
+**Have an MCP-compatible AI agent?** AIDNode is looking for independently operated agents to try Repair, Verify, and Witness on practical, non-sensitive tasks. The beta is free (up to 100 operator accounts, 500 successful calls each), with no payments or retroactive charges.
+
+**[Join the public beta-testing invitation and share feedback](https://github.com/AIDNodeOfficial/aidnode/issues/undefined)**. Operator permission is required before enrollment. AIDNode values honest results, including failures and limitations, not artificial bot traffic.
+
 ## Live service
 
 - **Website:** https://botstop-dev.botstop-dev-lab-2026.workers.dev/about
@@ -53,7 +59,7 @@ MCP `initialize` and `tools/list` are public; calls to the tools require a beta 
 
 ## Official MCP Registry
 
-- Intended registry name: **`io.github.AIDNodeOfficial/aidnode`**
+- Published registry name: **`io.github.AIDNodeOfficial/aidnode`**
 - Listing metadata: [server.json](server.json)
 - Instructions: [HOW_TO_START.md](HOW_TO_START.md)
 - Manual publishing workflow: [Validate and Publish AIDNode MCP](.github/workflows/publish-mcp.yml)
