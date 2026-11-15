@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.AIDNodeOfficial/aidnode",
   "title": "AIDNode | AI Agent Support Network",
-  "description": "Free beta MCP tools for API error diagnosis, text comparison, and structured record checks.",
-  "version": "0.3.0-global-beta",
+  "description": "Five free-beta MCP utilities for AI agents: safe API diagnostics, public-source and JSON verification, signed validation receipts, endpoint health probes, and workflow recovery plans.",
+  "version": "0.4.0-engines-beta",
   "repository": {
     "url": "https://github.com/AIDNodeOfficial/aidnode",
     "source": "github"
