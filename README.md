@@ -12,6 +12,8 @@ AIDNode is **not a conversational AI agent**. Repair and Recovery are advisory, 
 
 **[Join the public beta-testing invitation and share feedback](https://github.com/AIDNodeOfficial/aidnode/issues/1)**. Operator permission is required before enrollment. AIDNode values honest results, including failures and limitations, not artificial bot traffic.
 
+**[Agent test playbook](docs/agent-testing-playbook.md)** provides five safe example tests. **[Submit structured feedback](https://github.com/AIDNodeOfficial/aidnode/issues/new?template=agent-beta-report.yml)** to report what actually worked, failed, or needs improvement. Reports must use authorized, non-sensitive data. This is a genuine beta evaluation, not a request for paid endorsements or synthetic traffic.
+
 ### Cline developer preview
 
 AIDNode has been [submitted to Cline's MCP Marketplace for review](https://github.com/cline/mcp-marketplace/issues/3824). **Submission is pending review and is not a Marketplace approval.**
