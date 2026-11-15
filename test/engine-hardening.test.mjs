@@ -1,0 +1,15 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {aidRepair,aidVerify,aidWitness,aidMonitor,aidRecovery,sha256} from '../src/engines.mjs';
+const url='https://developers.cloudflare.com/workers/';
+const respond=(status,body)=>async()=>new Response(body,{status});
+test('Repair rejects unrecognized transport error',async()=>{await assert.rejects(()=>aidRepair({network_error:'NETWORK_MYSTERY'}),/supported transport code/)});
+test('Repair honors explicit throttling',async()=>{const r=await aidRepair({status:429,method:'GET',retry_after_seconds:4});assert.equal(r.automatic_retry_permitted,true);assert.ok(r.retry_policy.minimum_delay_ms>=4000)});
+test('Verify distinguishes matching 404 from successful evidence',async()=>{const r=await aidVerify({mode:'public_http',url,expected_sha256:await sha256('not found')},{fetchFn:respond(404,'not found')});assert.equal(r.digest_matches,true);assert.equal(r.independent_check_succeeded,false)});
+test('Verify accepts healthy content match',async()=>{const r=await aidVerify({mode:'public_http',url,expected_sha256:await sha256('good')},{fetchFn:respond(200,'good')});assert.equal(r.independent_check_succeeded,true)});
+test('Witness refuses no-op receipt',async()=>{await assert.rejects(()=>aidWitness({document:{a:1},required_fields:[]}),/at least one validation assertion/)});
+test('Witness declines external evidence on 404',async()=>{const r=await aidWitness({document:{a:1},required_fields:['a'],external_evidence:{url,expected_sha256:await sha256('oops')}},{fetchFn:respond(404,'oops')});assert.equal(r.passed,false);assert.equal(r.external_evidence.http_status_accepted,false)});
+test('Monitor supports latency budget',async()=>{const r=await aidMonitor({url,max_duration_ms:1000},{fetchFn:respond(200,'ok')});assert.equal(r.healthy,true);assert.equal(r.checks.within_latency_budget,true)});
+test('Monitor rejects invalid latency threshold',async()=>{await assert.rejects(()=>aidMonitor({url,max_duration_ms:0}),/max_duration_ms/)});
+test('Recovery blocks unverified completed side effects and dependents',()=>{const r=aidRecovery({steps:[{id:'charge',status:'succeeded',side_effects:true},{id:'notify',status:'pending',depends_on:['charge']}]});assert.ok(r.plan.blocked.some(x=>x.step==='charge'));assert.ok(r.plan.blocked.some(x=>x.step==='notify'))});
+test('Recovery preserves verified completed side effects',()=>{const r=aidRecovery({steps:[{id:'charge',status:'succeeded',side_effects:true,has_verified_outcome:true},{id:'notify',status:'pending',depends_on:['charge']}]});assert.deepEqual(r.plan.resume_in_topological_order,['notify'])});
