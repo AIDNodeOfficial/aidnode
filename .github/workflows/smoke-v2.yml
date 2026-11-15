@@ -46,5 +46,5 @@ jobs:
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --retry 2 --max-time 20 \
-            'https://botstop-dev.botstop-dev-lab-2026.workers.dev/about' \
-            | grep -q 'AIDNode'
+            'https://botstop-dev.botstop-dev-lab-2026.workers.dev/about' -o /tmp/aidnode-about.html
+          grep -q 'AIDNode' /tmp/aidnode-about.html
