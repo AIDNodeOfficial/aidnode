@@ -12,6 +12,12 @@ AIDNode is **not a conversational AI agent**. All results are based on the submi
 
 **[Join the public beta-testing invitation and share feedback](https://github.com/AIDNodeOfficial/aidnode/issues/1)**. Operator permission is required before enrollment. AIDNode values honest results, including failures and limitations, not artificial bot traffic.
 
+### Cline developer preview
+
+AIDNode has been [submitted to Cline's MCP Marketplace for review](https://github.com/cline/mcp-marketplace/issues/3824). **Submission is pending review and is not a Marketplace approval.**
+
+Cline users can [follow the remote Streamable HTTP setup guide](llms-install.md) to test the service with operator authorization. Cline-specific end-to-end testing by an outside developer is still requested.
+
 ## Live service
 
 - **Website:** https://botstop-dev.botstop-dev-lab-2026.workers.dev/about
