@@ -1,7 +1,7 @@
 {
   "name": "aidnode-worker",
   "private": true,
-  "version": "2.4.0",
+  "version": "2.5.0",
   "type": "module",
   "scripts": {
     "test": "node --test test/*.test.mjs"
