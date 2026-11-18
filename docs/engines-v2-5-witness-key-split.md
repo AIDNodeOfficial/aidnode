@@ -1,6 +1,6 @@
 # AIDNode engine 2.5.0: Witness signing-key split
 
-Status: **branch only until merged and deployed.** Production is engine 2.4.0 (Worker `botstop-dev` version `86e37085`).
+Status: **Deployed to production Nov 18, 2026.** Worker `botstop-dev` version `eca119ac`; `/health` reports engine 2.5.0.
 Decision: approved 2026-11-18 (decision log D-012 / D-015).
 
 ## What changes
@@ -22,5 +22,5 @@ Rolling back to 2.4.0 restores pepper-only verification. Receipts issued by 2.5.
 
 ## Other
 - `ENGINE_VERSION` 2.5.0, User-Agent `AIDNode-Verification/2.5`.
-- Public smoke-test pin raised from `>= 2.3.0` to `>= 2.4.0` (raise to `>= 2.5.0` after the 2.5.0 deploy).
+- Public smoke-test pin is `>= 2.5.0`.
 - `PUBLIC_VERSION` and the Registry `server.json` are unchanged.
