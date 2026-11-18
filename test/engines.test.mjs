@@ -1,14 +1,14 @@
-// AIDNode engine regression tests (v2.4). Offline: every network call uses an injected fetchFn.
+// AIDNode engine regression tests (v2.5). Offline: every network call uses an injected fetchFn.
 // Ported from PR #2 (improvements/v2-2-safety-and-evidence) and adapted to the deployed 2.3.0 lineage.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker, {ENGINE_VERSION,aidRepair,aidVerify,aidWitness,aidValidateReceipt,aidMonitor,aidRecovery,executeEnhancedTool,enhancedToolSpecs,sha256} from '../src/worker.js';
+import worker, {ENGINE_VERSION,aidRepair,aidVerify,aidWitness,aidValidateReceipt,aidMonitor,aidRecovery,executeEnhancedTool,enhancedToolSpecs,sha256,executeTool,WITNESS_KEY_ID,LEGACY_WITNESS_KEY_ID,LEGACY_RECEIPT_ACCEPT_UNTIL} from '../src/worker.js';
 
 const url='https://developers.cloudflare.com/workers/';
 const respond=(status,body,headers={})=>async()=>new Response(body,{status,headers});
 const KEY='unit-test-signing-key-not-a-secret';
 
-test('engine version is 2.4.0',()=>{assert.equal(ENGINE_VERSION,'2.4.0')});
+test('engine version is 2.5.0',()=>{assert.equal(ENGINE_VERSION,'2.5.0')});
 test('all five tools are published',()=>{assert.deepEqual(enhancedToolSpecs.map(t=>t.name),['repair','verify','witness','monitor','recovery'])});
 
 // Repair
@@ -28,9 +28,9 @@ test('Verify compare_text labels evidence as caller-supplied',async()=>{const r=
 
 // Witness
 test('Witness refuses no-op receipt',async()=>{await assert.rejects(()=>aidWitness({document:{a:1},required_fields:[]},{signingKey:KEY}),/at least one validation assertion/)});
-test('Witness allows a digest-only assertion',async()=>{const doc={a:1};const r=await aidWitness({document:doc,required_fields:[],expected_sha256:await sha256(JSON.stringify(doc))},{signingKey:KEY});assert.equal(r.checks.assertion_count,1);assert.ok(r.signature)});
+test('Witness allows a digest-only assertion',async()=>{const doc={a:1};const r=await aidWitness({document:doc,required_fields:[],expected_sha256:await sha256(JSON.stringify(doc))},{signingKey:KEY,now:()=>Date.parse('2026-11-18T12:00:00Z')});assert.equal(r.checks.assertion_count,1);assert.ok(r.signature)});
 test('Witness declines external evidence on 404',async()=>{const r=await aidWitness({document:{a:1},required_fields:['a'],external_evidence:{url,expected_sha256:await sha256('oops')}},{fetchFn:respond(404,'oops')});assert.equal(r.passed,false);assert.equal(r.external_evidence.http_success,false)});
-test('Witness signed receipt verifies; tampered receipt fails',async()=>{const r=await aidWitness({document:{run:{status:'complete'}},required_fields:['run.status']},{signingKey:KEY});assert.equal(r.passed,true);assert.equal(r.external_task_completion_verified,false);assert.equal((await aidValidateReceipt(r,KEY)).valid,true);assert.equal((await aidValidateReceipt({...r,passed:false},KEY)).valid,false)});
+test('Witness signed receipt verifies; tampered receipt fails',async()=>{const r=await aidWitness({document:{run:{status:'complete'}},required_fields:['run.status']},{signingKey:KEY,now:()=>Date.parse('2026-11-18T12:00:00Z')});assert.equal(r.passed,true);assert.equal(r.external_task_completion_verified,false);assert.equal((await aidValidateReceipt(r,{legacyKey:KEY,now:()=>Date.parse('2026-11-18T12:00:00Z')})).valid,true);assert.equal((await aidValidateReceipt({...r,passed:false},{legacyKey:KEY,now:()=>Date.parse('2026-11-18T12:00:00Z')})).valid,false)});
 
 // Monitor
 test('Monitor supports latency budget (pass)',async()=>{const r=await aidMonitor({url,max_duration_ms:1000},{fetchFn:respond(200,'ok')});assert.equal(r.healthy,true);assert.equal(r.checks.within_latency_budget,true)});
@@ -44,5 +44,25 @@ test('Recovery blocks unverified completed side effects and dependents',()=>{con
 test('Recovery resumes idempotent failed step in order',()=>{const r=aidRecovery({steps:[{id:'fetch',status:'succeeded'},{id:'transform',status:'failed',depends_on:['fetch'],idempotent:true},{id:'publish',status:'pending',depends_on:['transform'],side_effects:true}]});assert.deepEqual(r.plan.resume_in_topological_order,['transform','publish'])});
 
 // HTTP surface (no DB needed)
-test('GET /health reports engine 2.4.0 and disabled billing',async()=>{const res=await worker.fetch(new Request('https://x.test/health'),{BETA_MODE:'open'});const j=await res.json();assert.equal(j.engine_version,'2.4.0');assert.equal(j.billing_mode,'disabled');assert.equal(j.live_payments,false)});
+test('GET /health reports engine 2.5.0 and disabled billing',async()=>{const res=await worker.fetch(new Request('https://x.test/health'),{BETA_MODE:'open'});const j=await res.json();assert.equal(j.engine_version,'2.5.0');assert.equal(j.billing_mode,'disabled');assert.equal(j.live_payments,false)});
 test('MCP tools/list is public and lists monitor max_duration_ms',async()=>{const res=await worker.fetch(new Request('https://x.test/mcp',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'})}),{DB:{}});const j=await res.json();const m=j.result.tools.find(t=>t.name==='monitor');assert.ok(m.inputSchema.properties.max_duration_ms)});
+
+// Witness signing-key split (2.5.0). Throwaway test keys only; production keys live in Cloudflare secrets.
+const WKEY='unit-test-witness-key-0123456789abcdef-not-a-secret';
+const PEPPER='unit-test-legacy-pepper-not-a-secret';
+const BEFORE=()=>Date.parse('2026-11-18T12:00:00Z'), AFTER=()=>Date.parse('2026-12-19T06:00:00Z');
+const doc={document:{run:{status:'complete'}},required_fields:['run.status']};
+const keys={witnessKey:WKEY,legacyKey:PEPPER,now:BEFORE};
+test('Key split: new receipts sign with WITNESS_SIGNING_KEY and carry key_id',async()=>{const r=await aidWitness(doc,{witnessKey:WKEY,signingKey:PEPPER});assert.equal(r.signature.key_id,WITNESS_KEY_ID);const v=await aidValidateReceipt(r,keys);assert.equal(v.valid,true);assert.equal(v.key_id,WITNESS_KEY_ID);assert.equal(v.legacy_key,false)});
+test('Key split: executeTool signs with env.WITNESS_SIGNING_KEY, not REGISTRATION_PEPPER',async()=>{const r=await executeTool('witness',doc,{WITNESS_SIGNING_KEY:WKEY,REGISTRATION_PEPPER:PEPPER});assert.equal(r.signature.key_id,WITNESS_KEY_ID);assert.equal((await aidValidateReceipt(r,{witnessKey:WKEY,now:BEFORE})).valid,true);assert.equal((await aidValidateReceipt({...r,signature:{...r.signature,key_id:LEGACY_WITNESS_KEY_ID}},{legacyKey:PEPPER,now:BEFORE})).valid,false)});
+test('Key split: legacy receipt (key_id aidnode-worker-v2, pepper-signed) verifies during transition',async()=>{const r=await aidWitness(doc,{signingKey:PEPPER,now:BEFORE});assert.equal(r.signature.key_id,LEGACY_WITNESS_KEY_ID);const v=await aidValidateReceipt(r,keys);assert.equal(v.valid,true);assert.equal(v.legacy_key,true);assert.equal(v.legacy_accepted_until,LEGACY_RECEIPT_ACCEPT_UNTIL)});
+test('Key split: legacy receipt with no key_id verifies during transition',async()=>{const r=await aidWitness(doc,{signingKey:PEPPER,now:BEFORE});const sig={...r.signature};delete sig.key_id;const v=await aidValidateReceipt({...r,signature:sig},keys);assert.equal(v.valid,true);assert.equal(v.legacy_key,true)});
+test('Key split: legacy receipts are rejected after the 2026-12-18 CST cutoff',async()=>{assert.equal(LEGACY_RECEIPT_ACCEPT_UNTIL,'2026-12-19T05:59:59Z');const r=await aidWitness(doc,{signingKey:PEPPER,now:BEFORE});const v=await aidValidateReceipt(r,{...keys,now:AFTER});assert.equal(v.valid,false);assert.equal(v.reason,'legacy_key_retired');const n=await aidWitness(doc,{witnessKey:WKEY});assert.equal((await aidValidateReceipt(n,{...keys,now:AFTER})).valid,true)});
+test('Key split: no pepper fallback signing after the cutoff',async()=>{const r=await aidWitness(doc,{signingKey:PEPPER,now:AFTER});assert.equal(r.signature,undefined)});
+test('Key split: forged and tampered new-key receipts are rejected',async()=>{const r=await aidWitness(doc,{witnessKey:WKEY});assert.equal((await aidValidateReceipt({...r,passed:false},keys)).valid,false);const forged=await aidWitness(doc,{witnessKey:'attacker-guess-key-0123456789abcdef-xyz'});assert.equal(forged.signature.key_id,WITNESS_KEY_ID);const v=await aidValidateReceipt(forged,keys);assert.equal(v.valid,false);assert.equal(v.reason,'signature_mismatch');assert.equal((await aidValidateReceipt({...r,signature:{...r.signature,value:'0'.repeat(64)}},keys)).valid,false)});
+test('Key split: receipt signed with REGISTRATION_PEPPER under the new key_id is rejected',async()=>{const forged=await aidWitness(doc,{witnessKey:PEPPER.padEnd(40,'x')});const legacy=await aidWitness(doc,{signingKey:PEPPER,now:BEFORE});assert.equal((await aidValidateReceipt({...legacy,signature:{...legacy.signature,key_id:WITNESS_KEY_ID}},keys)).valid,false);assert.equal((await aidValidateReceipt(forged,keys)).valid,false)});
+test('Key split: wrong or unknown key_id is rejected',async()=>{const r=await aidWitness(doc,{witnessKey:WKEY});for(const id of ['aidnode-witness-k2','',' aidnode-witness-k1',LEGACY_WITNESS_KEY_ID]){const v=await aidValidateReceipt({...r,signature:{...r.signature,key_id:id}},keys);assert.equal(v.valid,false,`key_id ${JSON.stringify(id)}`)}assert.equal((await aidValidateReceipt({...r,signature:{...r.signature,key_id:42}},keys)).reason,'unknown_key_id');assert.equal((await aidValidateReceipt({...r,signature:{...r.signature,key_id:'aidnode-witness-k2'}},keys)).reason,'unknown_key_id')});
+test('Key split: key_id alone does not grant validity',async()=>{const bare={receipt_version:2,engine:'aidnode-witness',passed:true,receipt_id:'x',signature:{algorithm:'HMAC-SHA256',key_id:WITNESS_KEY_ID}};assert.equal((await aidValidateReceipt(bare,keys)).valid,false);assert.equal((await aidValidateReceipt({...bare,signature:{...bare.signature,value:'f'.repeat(64)}},keys)).valid,false);assert.equal((await aidValidateReceipt({...bare,signature:{...bare.signature,key_id:LEGACY_WITNESS_KEY_ID,value:'a'.repeat(64)}},keys)).valid,false)});
+test('Key split: new key_id cannot verify when WITNESS_SIGNING_KEY is not configured',async()=>{const r=await aidWitness(doc,{witnessKey:WKEY});const v=await aidValidateReceipt(r,{legacyKey:PEPPER,now:BEFORE});assert.equal(v.valid,false);assert.equal(v.reason,'signing_not_configured')});
+test('Key split: short WITNESS_SIGNING_KEY (<32 chars) is not used for signing',async()=>{const r=await aidWitness(doc,{witnessKey:'too-short-key',signingKey:PEPPER,now:BEFORE});assert.equal(r.signature.key_id,LEGACY_WITNESS_KEY_ID)});
+test('Key split: POST /receipts/verify accepts new and legacy receipts, rejects forgery',async()=>{const env={BETA_MODE:'open',WITNESS_SIGNING_KEY:WKEY,REGISTRATION_PEPPER:PEPPER};const post=async receipt=>(await worker.fetch(new Request('https://x.test/receipts/verify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({receipt})}),env)).json();const n=await aidWitness(doc,{witnessKey:WKEY});const l=await aidWitness(doc,{signingKey:PEPPER,now:BEFORE});const nv=await post(n);assert.equal(nv.valid,true);assert.equal(nv.key_id,WITNESS_KEY_ID);const lv=await post(l);if(Date.now()<=Date.parse(LEGACY_RECEIPT_ACCEPT_UNTIL)){assert.equal(lv.valid,true);assert.equal(lv.legacy_key,true)}else{assert.equal(lv.valid,false);assert.equal(lv.reason,'legacy_key_retired')}assert.equal((await post({...n,passed:false})).valid,false)});

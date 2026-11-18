@@ -26,5 +26,5 @@ Status: **branch only, not deployed.** Production is still Worker `botstop-dev` 
 PR #2 (`improvements/v2-2-safety-and-evidence`). That PR was written against a v2.2 engine module that never shipped. Its Repair "unknown transport code" fix and Recovery side-effect blocking already exist in 2.3.0 (Repair enforces it at the schema layer), so they did not need porting.
 
 ## Not yet done
-- **Witness signing-key split.** Receipts are currently HMAC-signed with the `REGISTRATION_PEPPER` secret, which is also used for registration fingerprints. The plan is a dedicated `WITNESS_SIGNING_KEY` secret binding with dual-key verification during transition. This needs a Cloudflare secret change, so it ships separately.
+- **Witness signing-key split.** Receipts are currently HMAC-signed with the `REGISTRATION_PEPPER` secret, which is also used for registration fingerprints. The plan is a dedicated `WITNESS_SIGNING_KEY` secret binding with dual-key verification during transition. This needs a Cloudflare secret change, so it ships separately. Done in engine 2.5.0: see `engines-v2-5-witness-key-split.md`.
 - Stale public text: `/llms.txt` says Verify fetches no websites, `discovery.json` and the server card omit Monitor and Recovery, and the og:description says "Three". To be fixed in a separate PR.

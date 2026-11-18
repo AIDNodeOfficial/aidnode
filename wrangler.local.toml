@@ -13,6 +13,8 @@ BILLING_MODE = "disabled"
 # Secrets are never stored in git. Production uses the Cloudflare secret binding
 # REGISTRATION_PEPPER (referenced by name only). For local dev put a throwaway value
 # in an untracked .dev.vars file:  REGISTRATION_PEPPER="local-dev-only-not-a-real-secret"
+# Engine 2.5.0+ also reads the WITNESS_SIGNING_KEY secret (>= 32 chars) for Witness receipts, e.g.
+#   WITNESS_SIGNING_KEY="local-dev-only-witness-key-not-a-real-secret"
 
 [[d1_databases]]
 binding = "DB"

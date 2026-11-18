@@ -147,9 +147,28 @@ function htmlGuide(origin) {
  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AIDNode | Free Beta Tools for AI Agents</title><meta name="description" content="Free AI-agent tool beta: API error repair advice, supplied-text comparisons, and structured document validation. 100 accounts, no charges."><link rel="canonical" href="${origin}/about"><script type="application/ld+json">${JSON.stringify(doc)}</script><style>body{font:16px/1.6 system-ui,sans-serif;max-width:790px;margin:5vh auto;padding:0 24px;color:#14243d;background:#f8fbff}h1{font-size:2.7rem;margin-bottom:0}h2{margin-top:2rem}section{padding:18px 22px;background:#fff;border:1px solid #d7e3ef;border-radius:14px;margin:18px 0}code,pre{background:#edf2f8;padding:2px 5px;overflow:auto}pre{padding:12px;border-radius:7px}a{color:#165ca6}small{color:#506074}</style></head><body><h1>AIDNode 🤖</h1><p>Repair · Verify · Witness</p><p>Machine-first utilities for authorized AI agents. <strong>Free beta: 100 enrolled accounts, 500 successful calls per account. No payments and no retroactive billing.</strong></p><section><h2>What can an agent do?</h2><p><strong>Repair:</strong> get safe HTTP/API error guidance. <strong>Verify:</strong> compare caller-supplied texts. <strong>Witness:</strong> validate supplied document structure. These tools do not execute recovery actions, browse external sources, or prove real-world activities.</p></section><section><h2>Connect an agent</h2><p>See the <a href="${origin}/llms.txt">machine-readable onboarding guide</a>, <a href="${origin}/openapi.json">OpenAPI specification</a>, <a href="${origin}/beta">live beta capacity</a>, or <a href="${origin}/.well-known/mcp/server-card.json">experimental MCP server card</a>.</p><pre>POST ${origin}/beta/join\nContent-Type: application/json\n\n{\"operator_id\":\"your-operator-id\",\"agent_name\":\"your-agent\",\"agree_beta_terms\":true}</pre><p>Only enroll with permission from the operator responsible for the agent. Save the one-time API key privately, then access the MCP endpoint at <code>${origin}/mcp</code>.</p></section><section><h2>How are bots reviewed?</h2><p>At successful call checkpoints 10, 50, 100, 250 and 500, agents can voluntarily provide structured, nonbinding feedback on usefulness, repeat use and hypothetical willingness to pay $0.005 per operation. No bot can authorize payment on an operator's behalf without an explicit purchasing policy.</p></section><p><small>Beta identities are self-declared and not independently verified. Never submit confidential information. Official MCP Registry publication is pending namespace verification.</small></p></body></html>`;
 }
 
-// AIDNode Engines v2.4 - deterministic, auditable AI-agent utilities. No external AI model is claimed.
+// AIDNode Engines v2.5 - deterministic, auditable AI-agent utilities. No external AI model is claimed.
 // Execute in Cloudflare Workers or Node >=20. All network probes are GET/HEAD to strict approved HTTPS hosts.
-export const ENGINE_VERSION = '2.4.0';
+export const ENGINE_VERSION = '2.5.0';
+// Witness signing-key split (engine 2.5.0, decision log D-012/D-015).
+// - New receipts are HMAC-SHA256 signed with the dedicated secret binding WITNESS_SIGNING_KEY
+//   (>= 32 chars; Cloudflare secret only, never in git) under key_id WITNESS_KEY_ID.
+// - key_id is bound into the HMAC key derivation, so editing key_id invalidates the signature.
+//   A key_id by itself never makes a receipt valid.
+// - REGISTRATION_PEPPER remains the registration-fingerprint secret. It is used for Witness ONLY to
+//   verify legacy receipts (no key_id, or key_id 'aidnode-worker-v2') during a 30-day transition.
+// - LEGACY CUTOFF: legacy receipts are accepted until 2026-12-18 23:59:59 CST (2026-12-19T05:59:59Z).
+//   After that they verify as {valid:false, reason:'legacy_key_retired'}. Remove the legacy path then.
+export const WITNESS_KEY_ID='aidnode-witness-k1';
+export const LEGACY_WITNESS_KEY_ID='aidnode-worker-v2';
+export const LEGACY_RECEIPT_ACCEPT_UNTIL='2026-12-19T05:59:59Z';
+const WITNESS_KEY_MIN_LENGTH=32, LEGACY_KEY_MIN_LENGTH=16;
+function legacyWindowOpen(nowMs){return nowMs<=Date.parse(LEGACY_RECEIPT_ACCEPT_UNTIL);}
+async function witnessHmacKey(secret,keyId,usage){
+ const label=keyId===LEGACY_WITNESS_KEY_ID?'aidnode-witness-receipt-v2|'+secret:'aidnode-witness-receipt-v3|'+keyId+'|'+secret;
+ const keyBytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(label));
+ return crypto.subtle.importKey('raw',keyBytes,{name:'HMAC',hash:'SHA-256'},false,[usage]);
+}
 const NETWORK_CODES=['ECONNRESET','ETIMEDOUT','ECONNREFUSED','EAI_AGAIN','DNS_ERROR','NETWORK_ERROR','TLS_ERROR'];
 const ENGINE_MAX_TEXT=100000, MAX_JSON=100000, MAX_DIFFS=32;
 const TRUSTED_HOSTS=new Set([
@@ -263,7 +282,7 @@ export function approvedUrl(raw){
 }
 async function publicObservation(url,{method='GET',maxBytes=16384,fetchFn=fetch}={}){
  const target=approvedUrl(url);const start=Date.now();let response;
- try{response=await fetchFn(target,{method,redirect:'manual',signal:AbortSignal.timeout(7000),headers:{'Accept':'text/plain, application/json, text/html;q=0.8, */*;q=0.1','User-Agent':'AIDNode-Verification/2.4'}})}
+ try{response=await fetchFn(target,{method,redirect:'manual',signal:AbortSignal.timeout(7000),headers:{'Accept':'text/plain, application/json, text/html;q=0.8, */*;q=0.1','User-Agent':'AIDNode-Verification/2.5'}})}
  catch(e){return {reachable:false,kind:'network_error',error:String(e?.name||'network_error').slice(0,80),url:target,observed_at:now(),duration_ms:Date.now()-start}};
  const r={reachable:true,url:target,http_status:response.status,kind:'http_observation',duration_ms:Date.now()-start,observed_at:now(),content_type:(response.headers.get('content-type')||'').slice(0,90),etag:(response.headers.get('etag')||'').slice(0,180),redirected:response.status>=300&&response.status<400};
  if(method==='HEAD')return r;
@@ -297,7 +316,7 @@ export async function aidVerify(input,{fetchFn=fetch}={}){
  }
  fail('unsupported verify mode');
 }
-export async function aidWitness(input,{signingKey,fetchFn=fetch}={}){
+export async function aidWitness(input,{signingKey,witnessKey,fetchFn=fetch,now:nowMs=Date.now}={}){
  if(!obj(input)||!obj(input.document)||!Array.isArray(input.required_fields))fail('document object and required_fields array are required');
  const canonicalDocument=guardJson(input.document);
  if(input.required_fields.length>100)fail('too many required_fields');
@@ -349,21 +368,37 @@ export async function aidWitness(input,{signingKey,fetchFn=fetch}={}){
  const policy_sha256=await sha256(guardJson({required_fields:input.required_fields,expected_values:input.expected_values||{},expected_types:input.expected_types||{},field_rules:input.field_rules||{},expected_sha256:input.expected_sha256??null,external_evidence:input.external_evidence??null}));
  const issued=now();const result={policy_sha256,receipt_version:2,engine:'aidnode-witness',version:ENGINE_VERSION,receipt_id:crypto.randomUUID(),issued_at:issued,checked_at:issued,document_sha256:digest,passed:failures.length===0,failures,checks:{assertion_count:assertionCount,required_field_count:input.required_fields.length,expected_value_count:Object.keys(input.expected_values||{}).length,expected_type_count:Object.keys(input.expected_types||{}).length,field_rule_count:Object.keys(input.field_rules||{}).length},evidence_basis:externalEvidence?'supplied_document_plus_independent_public_artifact':'caller_supplied_document',external_evidence:externalEvidence,external_task_completion_verified:false};
  // A keyed signature proves AIDNode produced this receipt. It does not prove real-world task execution.
- if(typeof signingKey==='string'&&signingKey.length>=16){const signPayload=canonical(result);const keyBytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('aidnode-witness-receipt-v2|'+signingKey));const key=await crypto.subtle.importKey('raw',keyBytes,{name:'HMAC',hash:'SHA-256'},false,['sign']);result.signature={algorithm:'HMAC-SHA256',key_id:'aidnode-worker-v2',value:hex(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(signPayload)))};}
+ // New key first. Legacy REGISTRATION_PEPPER signing is only a misconfiguration fallback (secret missing)
+ // and only inside the transition window; after the cutoff an unconfigured Worker issues unsigned receipts.
+ const signPayload=canonical(result);
+ if(typeof witnessKey==='string'&&witnessKey.length>=WITNESS_KEY_MIN_LENGTH){const key=await witnessHmacKey(witnessKey,WITNESS_KEY_ID,'sign');result.signature={algorithm:'HMAC-SHA256',key_id:WITNESS_KEY_ID,value:hex(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(signPayload)))};}
+ else if(typeof signingKey==='string'&&signingKey.length>=LEGACY_KEY_MIN_LENGTH&&legacyWindowOpen(nowMs())){const key=await witnessHmacKey(signingKey,LEGACY_WITNESS_KEY_ID,'sign');result.signature={algorithm:'HMAC-SHA256',key_id:LEGACY_WITNESS_KEY_ID,value:hex(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(signPayload)))};}
  return result;
 }
 // Third parties can verify the signature of a receipt without the original private document.
-export async function aidValidateReceipt(receipt,signingKey){
+// keys: {witnessKey, legacyKey, now}. A bare string is treated as {legacyKey} (pre-2.5 call shape).
+export async function aidValidateReceipt(receipt,keys){
+ const k=typeof keys==='string'?{legacyKey:keys}:(obj(keys)?keys:{});const nowMs=typeof k.now==='function'?k.now():Date.now();
  if(!obj(receipt)||!obj(receipt.signature)||receipt.signature.algorithm!=='HMAC-SHA256')return {valid:false,reason:'malformed_receipt'};
- if(typeof signingKey!=='string'||signingKey.length<16)return {valid:false,reason:'signing_not_configured'};
  const value=receipt.signature.value;if(typeof value!=='string'||!/^[a-f0-9]{64}$/.test(value))return {valid:false,reason:'invalid_signature_format'};
+ const rawId=receipt.signature.key_id;
+ if(rawId!==undefined&&typeof rawId!=='string')return {valid:false,reason:'unknown_key_id'};
+ const keyId=rawId===undefined?LEGACY_WITNESS_KEY_ID:rawId;
+ let secret,legacy=false;
+ if(keyId===WITNESS_KEY_ID){secret=k.witnessKey;if(typeof secret!=='string'||secret.length<WITNESS_KEY_MIN_LENGTH)return {valid:false,reason:'signing_not_configured',key_id:keyId};}
+ else if(keyId===LEGACY_WITNESS_KEY_ID){legacy=true;
+  if(!legacyWindowOpen(nowMs))return {valid:false,reason:'legacy_key_retired',key_id:keyId,legacy_accepted_until:LEGACY_RECEIPT_ACCEPT_UNTIL};
+  secret=k.legacyKey;if(typeof secret!=='string'||secret.length<LEGACY_KEY_MIN_LENGTH)return {valid:false,reason:'signing_not_configured',key_id:keyId};}
+ else return {valid:false,reason:'unknown_key_id'};
  const clean={...receipt};delete clean.signature;
  try{
-  const keyBytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('aidnode-witness-receipt-v2|'+signingKey));
-  const key=await crypto.subtle.importKey('raw',keyBytes,{name:'HMAC',hash:'SHA-256'},false,['verify']);
+  const key=await witnessHmacKey(secret,keyId,'verify');
   const bytes=Uint8Array.from(value.match(/../g).map(x=>parseInt(x,16)));
   const valid=await crypto.subtle.verify('HMAC',key,bytes,new TextEncoder().encode(canonical(clean)));
-  return {valid,receipt_id:receipt.receipt_id||null,scope:'authenticates_receipt_issuer_not_real_world_completion'};
+  const out={valid,receipt_id:receipt.receipt_id||null,key_id:keyId,legacy_key:legacy,scope:'authenticates_receipt_issuer_not_real_world_completion'};
+  if(legacy)out.legacy_accepted_until=LEGACY_RECEIPT_ACCEPT_UNTIL;
+  if(!valid)out.reason='signature_mismatch';
+  return out;
  }catch{return {valid:false,reason:'invalid_receipt'}}
 }
 export async function aidMonitor(input,{fetchFn=fetch}={}){
@@ -461,7 +496,7 @@ export function witness(input){
  if(input.expected_values!==undefined){if(!input.expected_values||typeof input.expected_values!=='object'||Array.isArray(input.expected_values))throw Error('expected_values must be object');for(const [key,v] of Object.entries(input.expected_values)){if(JSON.stringify(input.document[key])!==JSON.stringify(v))failures.push({field:key,reason:'unexpected_value'});}}
  return {passed:failures.length===0,failures,checked_at:new Date().toISOString(),scope:'supplied_document_structure',note:'This does not prove an external action occurred.'};
 }
-export async function executeTool(name,input,env){return executeEnhancedTool(name,input,{signingKey:env?.REGISTRATION_PEPPER});}
+export async function executeTool(name,input,env){return executeEnhancedTool(name,input,{witnessKey:env?.WITNESS_SIGNING_KEY,signingKey:env?.REGISTRATION_PEPPER});}
 
 const VERSION=PUBLIC_VERSION, MAX_BETA_CUSTOMERS=100, BETA_FREE_CALLS=500, CHECKPOINTS=[10,50,100,250,500];
 const json=(obj,status=200)=>new Response(JSON.stringify(obj),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
@@ -568,7 +603,7 @@ export default {async fetch(request,env){
  if(request.method==='GET'&&path==='/sitemap.xml')return new Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>'+origin+'/about</loc></url></urlset>',{headers:{'content-type':'application/xml; charset=utf-8'}});
  if(path==='/mcp'&&(request.method==='GET'||request.method==='DELETE'))return new Response(null,{status:405,headers:{allow:'POST'}});
  if(request.method==='GET'&&path==='/openapi.json'){const s=openapi(origin);s.paths['/tools/monitor']={post:{tags:['Tools'],summary:'On-demand approved-host HTTPS endpoint health probe',security:[{bearerAuth:[]}],responses:{'200':{description:'Independent HTTP observation'}}}};s.paths['/tools/recovery']={post:{tags:['Tools'],summary:'Dependency-aware safe recovery plan for failed agent workflows; no execution',security:[{bearerAuth:[]}],responses:{'200':{description:'Recovery plan'}}}};s.paths['/receipts/verify']={post:{tags:['Discovery'],summary:'Verify an AIDNode Witness receipt HMAC (not proof of real-world completion)',responses:{'200':{description:'Receipt signature verification'}}}};return json(s);}
- if(request.method==='POST'&&path==='/receipts/verify'){let data;try{data=await body(request,16000);}catch{return error('invalid_receipt_body',400);}return json(await aidValidateReceipt(data?.receipt,env.REGISTRATION_PEPPER));}
+ if(request.method==='POST'&&path==='/receipts/verify'){let data;try{data=await body(request,16000);}catch{return error('invalid_receipt_body',400);}return json(await aidValidateReceipt(data?.receipt,{witnessKey:env.WITNESS_SIGNING_KEY,legacyKey:env.REGISTRATION_PEPPER}));}
  if(!env?.DB)return error('database_binding_missing',503);
  if(request.method==='GET'&&path==='/beta'){
   const count=await env.DB.prepare('SELECT count(*) AS n FROM beta_accounts').first();

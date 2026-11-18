@@ -15,6 +15,7 @@ Bindings (by name only; values are never in git):
 - `DB` is D1 `botstop-dev-db`.
 - `BETA_MODE` and `BILLING_MODE` are plain-text vars.
 - `REGISTRATION_PEPPER` is a **secret binding**. It stays in Cloudflare.
+- `WITNESS_SIGNING_KEY` (engine 2.5.0+) is a **secret binding** used only to sign and verify Witness receipts (`key_id aidnode-witness-k1`). It stays in Cloudflare. Legacy pepper-signed receipts verify until 2026-12-18 CST; see `docs/engines-v2-5-witness-key-split.md`.
 
 `migrations/0000_schema.sql` is the production D1 **schema only**: tables, indexes and triggers, read-only dump, no rows.
 
