@@ -66,3 +66,43 @@ test('Key split: key_id alone does not grant validity',async()=>{const bare={rec
 test('Key split: new key_id cannot verify when WITNESS_SIGNING_KEY is not configured',async()=>{const r=await aidWitness(doc,{witnessKey:WKEY});const v=await aidValidateReceipt(r,{legacyKey:PEPPER,now:BEFORE});assert.equal(v.valid,false);assert.equal(v.reason,'signing_not_configured')});
 test('Key split: short WITNESS_SIGNING_KEY (<32 chars) is not used for signing',async()=>{const r=await aidWitness(doc,{witnessKey:'too-short-key',signingKey:PEPPER,now:BEFORE});assert.equal(r.signature.key_id,LEGACY_WITNESS_KEY_ID)});
 test('Key split: POST /receipts/verify accepts new and legacy receipts, rejects forgery',async()=>{const env={BETA_MODE:'open',WITNESS_SIGNING_KEY:WKEY,REGISTRATION_PEPPER:PEPPER};const post=async receipt=>(await worker.fetch(new Request('https://x.test/receipts/verify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({receipt})}),env)).json();const n=await aidWitness(doc,{witnessKey:WKEY});const l=await aidWitness(doc,{signingKey:PEPPER,now:BEFORE});const nv=await post(n);assert.equal(nv.valid,true);assert.equal(nv.key_id,WITNESS_KEY_ID);const lv=await post(l);if(Date.now()<=Date.parse(LEGACY_RECEIPT_ACCEPT_UNTIL)){assert.equal(lv.valid,true);assert.equal(lv.legacy_key,true)}else{assert.equal(lv.valid,false);assert.equal(lv.reason,'legacy_key_retired')}assert.equal((await post({...n,passed:false})).valid,false)});
+
+// Discovery metadata (growth/first-users): public, truthful, SEP-2127 server card + AI catalog.
+test('GET /mcp/server-card returns a SEP-2127 server card matching server.json identity',async()=>{
+ const res=await worker.fetch(new Request('https://x.test/mcp/server-card'),{BETA_MODE:'open'});
+ assert.equal(res.status,200);
+ assert.equal(res.headers.get('content-type'),'application/mcp-server-card+json');
+ assert.equal(res.headers.get('access-control-allow-origin'),'*');
+ const c=await res.json();
+ assert.equal(c.name,'io.github.AIDNodeOfficial/aidnode');
+ assert.ok(c.$schema.includes('server-card'));
+ assert.equal(c.remotes[0].type,'streamable-http');
+ assert.equal(c.remotes[0].url,'https://x.test/mcp');
+ assert.equal(c.remotes[0].headers[0].isSecret,true);
+ assert.ok(!JSON.stringify(c).match(/glama_claim|sk_|Bearer [A-Za-z0-9]{16,}/));
+});
+test('GET /.well-known/ai-catalog.json points at the server card',async()=>{
+ const res=await worker.fetch(new Request('https://x.test/.well-known/ai-catalog.json'),{BETA_MODE:'open'});
+ assert.equal(res.status,200);
+ const c=await res.json();
+ assert.equal(c.entries[0].type,'application/mcp-server-card+json');
+ assert.equal(c.entries[0].url,'https://x.test/mcp/server-card');
+});
+test('llms.txt follows llmstxt.org shape and no longer claims Verify never fetches',async()=>{
+ const res=await worker.fetch(new Request('https://x.test/llms.txt'),{BETA_MODE:'open'});
+ const t=await res.text();
+ assert.ok(t.startsWith('# AIDNode\n\n> '));
+ assert.ok(!t.includes('no website fetched'));
+ assert.match(t,/allowlist of public HTTPS hosts/);
+ for(const tool of ['repair','verify','witness','monitor','recovery'])assert.match(t,new RegExp('- '+tool+':'));
+});
+test('tool descriptions say when to use each tool; names unchanged',()=>{
+ assert.deepEqual(enhancedToolSpecs.map(t=>t.name),['repair','verify','witness','monitor','recovery']);
+ for(const t of enhancedToolSpecs){assert.match(t.description,/Use (after|to|when)/);assert.ok(t.description.length<=400,t.name)}
+});
+test('/docs no longer says registry publication is pending',async()=>{
+ const res=await worker.fetch(new Request('https://x.test/docs'),{BETA_MODE:'open'});
+ const h=await res.text();
+ assert.ok(!h.includes('pending namespace verification'));
+ assert.ok(h.includes('Monitor'));
+});
