@@ -2,6 +2,14 @@
 
 **The Support Network for Autonomous Agents**
 
+[![AIDNode MCP connector](https://glama.ai/mcp/connectors/io.github.AIDNodeOfficial/aidnode/badges/score.svg)](https://glama.ai/mcp/connectors/io.github.AIDNodeOfficial/aidnode)
+
+**Remote MCP URL:** `https://botstop-dev.botstop-dev-lab-2026.workers.dev/mcp` · Streamable HTTP · free beta key · **[Agent quick start (Claude Code, Cursor, VS Code, Cline, LangChain, CrewAI, OpenAI Agents SDK)](docs/quickstart-agents.md)**
+
+```bash
+claude mcp add --transport http aidnode https://botstop-dev.botstop-dev-lab-2026.workers.dev/mcp --header "Authorization: Bearer $AIDNODE_API_KEY"
+```
+
 AIDNode is an experimental, free-beta **Model Context Protocol (MCP)** service hosted on Cloudflare. It provides five structured agent utilities for diagnostics, comparison, constrained public-source evidence checks, validation receipts, endpoint probes, and safe workflow recovery planning.
 
 AIDNode is **not a conversational AI agent**. Repair and Recovery are advisory, Verify and Monitor can independently fetch only approved public HTTPS origins, and Witness signs checks of evidence but **cannot certify real-world task completion**. These are auditable deterministic engines, not newly trained AI models.
@@ -29,6 +37,7 @@ Cline users can [follow the remote Streamable HTTP setup guide](llms-install.md)
 - **Agent onboarding:** https://botstop-dev.botstop-dev-lab-2026.workers.dev/llms.txt
 - **Free beta terms/capacity:** https://botstop-dev.botstop-dev-lab-2026.workers.dev/beta
 - **Discovery metadata:** https://botstop-dev.botstop-dev-lab-2026.workers.dev/discovery.json
+- **MCP Server Card (SEP-2127):** https://botstop-dev.botstop-dev-lab-2026.workers.dev/mcp/server-card (listed in `/.well-known/ai-catalog.json`)
 
 The legacy `botstop-dev` hostname is preserved for compatibility. The public-facing service is branded **AIDNode**.
 
@@ -39,9 +48,13 @@ The legacy `botstop-dev` hostname is preserved for compatibility. The public-fac
 | `repair` | Classifies API/transport failures and creates idempotency-aware, bounded retry plans. Advisory only. |
 | `verify` | Compares text or canonical JSON and can independently fetch small artifacts from a fixed list of approved public HTTPS origins. No factual-truth certification. |
 | `witness` | Checks structured evidence, optionally compares an independently fetched public artifact, and issues an HMAC-signed receipt. Not proof of real-world completion. |
-| `monitor` | Performs on-demand, restricted HTTPS status/content health probes. Recurring schedules are not yet available. |\n| `recovery` | Builds safe dependency-aware workflow resume and compensation plans; never executes recovery actions. |\n| `submit_beta_feedback` | Accepts optional, nonbinding agent feedback at usage checkpoints (currently Repair, Verify, Witness and overall). |
+| `monitor` | Performs on-demand, restricted HTTPS status/content health probes. Recurring schedules are not yet available. |
+| `recovery` | Builds safe dependency-aware workflow resume and compensation plans; never executes recovery actions. |
+| `submit_beta_feedback` | Accepts optional, nonbinding agent feedback at usage checkpoints (currently Repair, Verify, Witness and overall). |
 
-**[Read the complete five-engine guide](docs/engines-v2.md)**, including exact MCP call examples, limitations, and receipt verification.\n\n## Free development beta
+**[Read the complete five-engine guide](docs/engines-v2.md)**, including exact MCP call examples, limitations, and receipt verification.
+
+## Free development beta
 
 - Up to **100 operator accounts**, with **500 successful operations per account**.
 - **No payment, charges, or retroactive billing** during the beta.
